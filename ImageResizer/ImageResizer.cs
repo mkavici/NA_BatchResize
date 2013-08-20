@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace ImageResizer
@@ -12,6 +14,9 @@ namespace ImageResizer
         {
             InitializeComponent();
         }
+        protected bool validData;
+        protected Thread getImageThread;
+        protected string lastFilename = String.Empty;
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -48,6 +53,75 @@ namespace ImageResizer
 
             }
         }
+
+
+
+        #region drag drop
+
+        private void OnDragDrop(object sender, System.Windows.Forms.DragEventArgs e)
+        {
+            Debug.WriteLine("OnDragDrop");
+            if (validData)
+            {
+                listBoxImages.Items.Add(lastFilename);
+            }
+        }
+
+        private void OnDragEnter(object sender, System.Windows.Forms.DragEventArgs e)
+        {
+            Debug.WriteLine("OnDragEnter");
+            string filename;
+            validData = GetFilename(out filename, e);
+            if (validData)
+            {
+                if (lastFilename != filename)
+                {
+             
+                    lastFilename = filename;
+           
+                }
+                else
+                {
+                  //
+                }
+                e.Effect = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
+            }
+        }
+
+
+
+
+        protected bool GetFilename(out string filename, DragEventArgs e)
+        {
+            bool ret = false;
+            filename = String.Empty;
+
+            if ((e.AllowedEffect & DragDropEffects.Copy) == DragDropEffects.Copy)
+            {
+                Array data = ((IDataObject)e.Data).GetData("FileDrop") as Array;
+                if (data != null)
+                {
+                    if ((data.Length == 1) && (data.GetValue(0) is String))
+                    {
+                        filename = ((string[])data)[0];
+                        string ext = Path.GetExtension(filename).ToLower();
+                        if ((ext == ".jpg") || (ext == ".png") || (ext == ".bmp"))
+                        {
+                            ret = true;
+                        }
+                    }
+                }
+            }
+            return ret;
+        }
+
+
+        #endregion
+
 
 
 
@@ -151,6 +225,11 @@ namespace ImageResizer
         private void btnClr_Click(object sender, EventArgs e)
         {
             listBoxImages.Items.Clear();
+        }
+
+        private void progressBarDone_Click(object sender, EventArgs e)
+        {
+
         }
 
     }
