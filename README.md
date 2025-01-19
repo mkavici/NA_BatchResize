@@ -6,8 +6,8 @@ Image resizer Crops,resizes and renames batch images
 
 Requirements
 ==============
-.net framework 4.0
-Windows xp/vista/7/8
+.NET 8
+Windows 10+
 
 
 Features
