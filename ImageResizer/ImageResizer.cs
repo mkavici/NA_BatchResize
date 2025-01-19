@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Drawing;
+using SixLabors.ImageSharp;
+
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Processing;
 
 namespace ImageResizer
 {
@@ -128,51 +131,46 @@ namespace ImageResizer
 
         protected void ConvertToPng(string filename)
         {
-            var origImg = System.Drawing.Image.FromFile(filename);
-            var widthDivisor = (double)origImg.Width / (double)numericWidth.Value;
-            var heightDivisor = (double)origImg.Height / (double)numericHeight.Value;
-
-
-            //var widthDivisor = (double)origImg.Width / (double)System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width;
-            //var heightDivisor = (double)origImg.Height / (double)System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height;
-
-
-            int newWidth, newHeight;
-
-            if (widthDivisor < heightDivisor)
+            using (var origImg = Image.Load(filename))
             {
-                newWidth = (int)((double)origImg.Width / widthDivisor);
-                newHeight = (int)((double)origImg.Height / widthDivisor);
+                // Calculate the scaling factors
+                var widthDivisor = (double)origImg.Width / (double)numericWidth.Value;
+                var heightDivisor = (double)origImg.Height / (double)numericHeight.Value;
+
+                int newWidth, newHeight;
+
+                // Determine new dimensions
+                if (widthDivisor < heightDivisor)
+                {
+                    newWidth = (int)(origImg.Width / widthDivisor);
+                    newHeight = (int)(origImg.Height / widthDivisor);
+                }
+                else
+                {
+                    newWidth = (int)(origImg.Width / heightDivisor);
+                    newHeight = (int)(origImg.Height / heightDivisor);
+                }
+
+                // Resize the image
+                origImg.Mutate(x => x.Resize(newWidth, newHeight));
+
+                // Prepare the output filename
+                string baseFilename = Path.GetFileNameWithoutExtension(filename);
+                string newFilename = Path.Combine(txtSaveFolder.Text, baseFilename);
+
+                if (radioJPG.Checked)
+                {
+                    newFilename += ".jpg";
+                    var jpegEncoder = new JpegEncoder();
+                    origImg.Save(newFilename, jpegEncoder);
+                }
+                else
+                {
+                    newFilename += ".png";
+                    var pngEncoder = new PngEncoder();
+                    origImg.Save(newFilename, pngEncoder);
+                }
             }
-            else
-            {
-                newWidth = (int)((double)origImg.Width / heightDivisor);
-                newHeight = (int)((double)origImg.Height / heightDivisor);
-            }
-
-            var newImg = new Bitmap(newWidth, newHeight);
-            Graphics g = Graphics.FromImage(newImg);    
-            g.DrawImage(origImg, new Rectangle(0, 0, newWidth, newHeight));
-
-            
-
-           
-
-            string a = filename.Split('\\').Last().Split('.')[0].ToString();
-
-             string newFilename =  Path.Combine(txtSaveFolder.Text, a);
-            if (radioJPG.Checked)
-            {
-                newFilename = newFilename+".jpg";
-                newImg.Save(newFilename, System.Drawing.Imaging.ImageFormat.Jpeg);
-            }
-            else
-            {
-                newFilename = newFilename + ".png";
-                newImg.Save(newFilename, System.Drawing.Imaging.ImageFormat.Png);
-            }
-            
-            g.Dispose();
         }
 
         private void btnFolderSelect_Click(object sender, EventArgs e)
